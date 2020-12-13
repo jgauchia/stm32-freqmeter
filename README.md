@@ -20,10 +20,10 @@ Features
 LCD Output connection
 ---------------------
 
-   LCD DAT(D4~D7) PB12~PB15
-   LCD E PB10
-   LCD RW PB7   
-   LCD RS PB8
+   LCD DAT(D4-D7) PB12-PB15
+   LCD E          PB10
+   LCD RW         PB7   
+   LCD RS         PB8
 
 
 Build and Flash
