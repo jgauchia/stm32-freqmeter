@@ -8,7 +8,7 @@
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/usb/usbd.h>
-
+#include "lcd1602.h"
 #include "usbcdc.h"
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
@@ -115,6 +115,8 @@ static char *prescalers_name[] = {
 static int prescaler_current = 0; /* Default to no prescaler. */
 
 static char buffer[BUFFER_SIZE];
+
+static char str[32];
 
 void systick_ms_setup(void) {
   /* 72MHz clock, interrupt for every 72,000 CLKs (1ms). */
@@ -279,6 +281,14 @@ int main(void) {
   gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_OPENDRAIN, GPIO9);
   gpio_clear(GPIOB, GPIO9);
 
+  /* Setup Pins for LCD */
+  gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_PUSHPULL, GPIO12); 
+  gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_PUSHPULL, GPIO13); 
+  gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_PUSHPULL, GPIO14); 
+  gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_PUSHPULL, GPIO15); 
+  gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_PUSHPULL, GPIO10); 
+  gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_PUSHPULL, GPIO8); 
+  gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,GPIO_CNF_OUTPUT_PUSHPULL, GPIO7); 
   usbcdc_init();
 
   gpio_clear(GPIOB, GPIO1);
@@ -286,12 +296,20 @@ int main(void) {
   timer_setup();
   systick_ms_setup();
   mco_setup();
+  
+  LCD_Init();
+  ClearLcdData();
+  SetLcdXY(0, 0);
+  puts_lcd("STM32 freqmeter");
 
   /* Wait 500ms for USB setup to complete before trying to send anything. */
   /* Takes ~ 130ms on my machine */
   // TODO: a better way?
   while (systick_ms < 500);
-
+  
+  ClearLcdData();
+  SetLcdXY(0, 0);
+  
   /* The loop. */
   uint32_t last_ms = 0;
 
@@ -316,6 +334,11 @@ int main(void) {
       hold ? "ON " : "OFF"
     );
 
+    /* Output to LCD */
+    sprintf(str,"%4lu.%06lu MHz%c",(freq - 65536) / 1000000,(freq - 65536) % 1000000, gpio_get(GPIOB, GPIO1) ? '.' : ' ');
+    SetLcdXY(0,0);
+    puts_lcd(str);
+    
     usbcdc_printf("Clock output: %s\r\n", mco_name[mco_current]);
     usbcdc_printf("Digital Filter: %s\r\n", filters_name[filter_current]);
     usbcdc_printf("Pre-scaler: %s\r\n", prescalers_name[prescaler_current]);
