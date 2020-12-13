@@ -305,7 +305,7 @@ int main(void) {
   /* Wait 500ms for USB setup to complete before trying to send anything. */
   /* Takes ~ 130ms on my machine */
   // TODO: a better way?
-  while (systick_ms < 500);
+  while (systick_ms < 2000);
   
   ClearLcdData();
   SetLcdXY(0, 0);
@@ -337,6 +337,9 @@ int main(void) {
     /* Output to LCD */
     sprintf(str,"%4lu.%06lu MHz%c",(freq - 65536) / 1000000,(freq - 65536) % 1000000, gpio_get(GPIOB, GPIO1) ? '.' : ' ');
     SetLcdXY(0,0);
+    puts_lcd(str);
+    SetLcdXY(0,1);
+    sprintf(str,"[Hold: %s]",hold ? "ON " : "OFF");
     puts_lcd(str);
     
     usbcdc_printf("Clock output: %s\r\n", mco_name[mco_current]);
