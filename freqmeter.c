@@ -36,7 +36,7 @@ static uint32_t mco_val[] = {
   //RCC_CFGR_MCO_PLL3,         /* No signal. */
 };
 static char *mco_name[] = {
-  "      OFF",
+  "OFF"     ,
   //"72 MHz   ", /* Will not be able to output. */
   " 8 MHz RC",
   " 8 MHz   ",
@@ -46,7 +46,15 @@ static char *mco_name[] = {
   //"XT1      ", /* No signal. */
   //"PLL3     ", /* No signal. */
 };
+/* Clock output name for LCD*/
+static char *mco_name_lcd[] = {
+  " OFF    ",
+  " 8 MHz",
+  " 8 MHz  ",
+  "36 MHz  ",
+};    
 static int mco_current = 0; /* Default to off. */
+static int mco_old = 0;
 
 static enum tim_ic_filter filters_val[] = {
   TIM_IC_OFF,
@@ -73,7 +81,7 @@ static enum tim_ic_filter filters_val[] = {
   TIM_IC_DTF_DIV_32_N_8,
 };
 static char *filters_name[] = {
-  "       OFF",
+  "OFF       ",
 
   "36.000 MHz",
   "18.000 MHz",
@@ -97,6 +105,7 @@ static char *filters_name[] = {
   "281.25 kHz",
 };
 static int filter_current = 0; /* Default to no filter. */
+static int filter_old = 0;
 
 static enum tim_ic_psc prescalers_val[] = {
   TIM_IC_PSC_OFF,
@@ -113,10 +122,14 @@ static char *prescalers_name[] = {
   "  8",
 };
 static int prescaler_current = 0; /* Default to no prescaler. */
+static int prescaler_old = 0;
 
 static char buffer[BUFFER_SIZE];
 
 static char str[32];
+
+uint8_t custom_char_rc[] = { 0x1C, 0x14, 0x18, 0x14, 0x00, 0x07, 0x04, 0x07 };
+static bool is_print_custom = false;
 
 void systick_ms_setup(void) {
   /* 72MHz clock, interrupt for every 72,000 CLKs (1ms). */
@@ -242,7 +255,7 @@ void poll_command(void) {
       if (prescaler_current >= ARRAY_SIZE(prescalers_val)) {
         prescaler_current = 0;
       }
-
+    
       timer_slave_set_prescaler(TIM2, prescalers_val[prescaler_current]);
 
       return;
@@ -298,6 +311,7 @@ int main(void) {
   mco_setup();
   
   LCD_Init();
+  create_custom_char(0,custom_char_rc);
   ClearLcdData();
   SetLcdXY(0, 0);
   puts_lcd("STM32 freqmeter");
@@ -334,18 +348,59 @@ int main(void) {
       hold ? "ON " : "OFF"
     );
 
+    usbcdc_printf("Clock output: %s\r\n", mco_name[mco_current]);
+    usbcdc_printf("Digital Filter: %s\r\n", filters_name[filter_current]);
+    usbcdc_printf("Pre-scaler: %s\r\n", prescalers_name[prescaler_current]);
+
     /* Output to LCD */
     sprintf(str,"%4lu.%06lu MHz%c",(freq - 65536) / 1000000,(freq - 65536) % 1000000, gpio_get(GPIOB, GPIO1) ? '.' : ' ');
     SetLcdXY(0,0);
     puts_lcd(str);
     SetLcdXY(0,1);
-    sprintf(str,"[Hold: %s]",hold ? "ON " : "OFF");
-    puts_lcd(str);
-    
-    usbcdc_printf("Clock output: %s\r\n", mco_name[mco_current]);
-    usbcdc_printf("Digital Filter: %s\r\n", filters_name[filter_current]);
-    usbcdc_printf("Pre-scaler: %s\r\n", prescalers_name[prescaler_current]);
-
+    sprintf(str,"%sOut %s",hold ? "HLD " : "    ",mco_name_lcd[mco_current]);
+    puts_lcd(str);  
+    /* is_print_custom ---> Flag to know if custom char is printed */
+    /* Only print custom char when mco change to 8 Mhz RC */
+    if (mco_current == 1 && is_print_custom == false && mco_current == mco_old)
+    {
+        SetLcdXY(15,1);
+        puts_custom_char(0);
+        is_print_custom = true;
+        SetLcdXY(0,1);
+    }
+    /* Show Pre-scaler info */
+    if (prescaler_old != prescaler_current)
+    {
+        is_print_custom = false;
+        sprintf(str,"Pre-scaler: %s ",prescalers_name[prescaler_current]);
+        prescaler_old = prescaler_current;
+        SetLcdXY(0,1);
+        puts_lcd(str);
+        /* Delay for output message */
+        while (systick_ms < (last_ms + 2000));
+    }
+    /* Show Digital Filter info */
+    if (filter_old != filter_current)
+    {
+        is_print_custom = false;
+        sprintf(str,"Fltr: %s",filters_name[filter_current]);
+        filter_old = filter_current;
+        SetLcdXY(0,1);
+        puts_lcd(str);
+        /* Delay for output message */
+        while (systick_ms < (last_ms + 2000));
+    }
+    /* Show Clock Output info */
+    if (mco_old != mco_current)
+    {
+        is_print_custom = false;
+        sprintf(str,"Clk: %s  ",mco_name[mco_current]);
+        mco_old = mco_current;
+        SetLcdXY(0,1);
+        puts_lcd(str);
+        /* Delay for output message */
+        while (systick_ms < (last_ms + 2000));
+    }
     while (systick_ms < (last_ms + DISP_DELAY));
     last_ms = systick_ms;
   }
