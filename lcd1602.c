@@ -134,3 +134,21 @@ void LCD_Init()
 	
 	
 }
+
+void create_custom_char(uint8_t num, uint8_t* data)
+{
+    int i;
+    num &= 0x07;
+    WriteLcdData(1,0x40 | (num << 3));
+    delay(100000);
+    for (i = 0; i < 8; i++)
+    {
+        WriteLcdData(0,data[i]);
+        delay(200000);
+    }
+}
+
+void puts_custom_char(uint8_t num)
+{
+     WriteLcdData(0,num);   
+}
