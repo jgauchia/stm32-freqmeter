@@ -5,14 +5,13 @@
 
 /* LCD DAT(D4~D7) PB12~PB15
    LCD E PB10
-   LCD RW PB9
+   LCD RW PB7
    LCD RS PB8
-   四线驱动1602
 */
 #define LCD_E_LOW gpio_clear(GPIOB, GPIO10)
 #define LCD_E_HIGH gpio_set(GPIOB, GPIO10)
-#define LCD_RW_LOW gpio_clear(GPIOB, GPIO9)
-#define LCD_RW_HIGH gpio_set(GPIOB,GPIO9)
+#define LCD_RW_LOW gpio_clear(GPIOB, GPIO7)
+#define LCD_RW_HIGH gpio_set(GPIOB,GPIO7)
 #define LCD_RS_LOW gpio_clear(GPIOB,GPIO8)
 #define LCD_RS_HIGH gpio_set(GPIOB,GPIO8)
 
