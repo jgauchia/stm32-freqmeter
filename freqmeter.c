@@ -36,7 +36,7 @@ static uint32_t mco_val[] = {
   //RCC_CFGR_MCO_PLL3,         /* No signal. */
 };
 static char *mco_name[] = {
-  "OFF"     ,
+  "OFF      ",
   //"72 MHz   ", /* Will not be able to output. */
   " 8 MHz RC",
   " 8 MHz   ",
